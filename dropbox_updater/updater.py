@@ -20,15 +20,16 @@ UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload'
 DROPBOX_HASH_CHUNK_SIZE = 4 * 1024 * 1024
 
 
-def compress(file_path, dir_path):
+def compress(file_path, dir_path, excluded):
     logger.info(f'Compressing to {file_path}...')
     file_dir_path = os.path.dirname(file_path)
     if file_dir_path:
         os.makedirs(file_dir_path, exist_ok=True)
+    excluded = excluded + ['dist', 'venv', file_path]
     with tarfile.open(file_path, 'w:bz2') as tar:
         for name in glob(os.path.join(dir_path, '*')):
             basename = os.path.basename(name)
-            if basename in ['dist', 'venv', file_path]:
+            if basename in excluded:
                 continue
             tar.add(name, arcname=basename)
 
@@ -187,7 +188,7 @@ def upload(data):
     data = deepcopy(data)
     for datum in data:
         old_hash = get_local_hash(datum['file_path'])
-        compress(datum['file_path'], datum['extract_dir'])
+        compress(datum['file_path'], datum['extract_dir'], datum['exclude'])
         datum['hash_match'] = old_hash == get_local_hash(datum['file_path'])
     update_required = [d for d in data if not d['hash_match']]
     if update_required == []:

@@ -34,10 +34,10 @@ def compress(file_path, dir_path, excluded):
             tar.add(name, arcname=basename)
 
 
-def remove_old_files(extract_dir):
+def remove_old_files(extract_dir, excluded):
     for name in glob(os.path.join(extract_dir, '*')):
         basename = os.path.basename(name)
-        if basename in ['dist', 'venv']:
+        if basename in excluded + ['dist', 'venv']:
             continue
         if os.path.isfile(name) or os.path.islink(name):
             os.unlink(name)
@@ -161,7 +161,7 @@ def check_for_updates(data, restart=True):
     logger.info(f'Downloading ({total}/{total})...')
     for i, data in enumerate(update_required):
         logger.info(f'Extracting ({i}/{total})...')
-        remove_old_files(data['extract_dir'])
+        remove_old_files(data['extract_dir'], data['exclude'])
         extract(data['dropbox_path'], data['file_path'], data['extract_dir'])
     logger.info(f'Extracting ({total}/{total})...')
     if restart:

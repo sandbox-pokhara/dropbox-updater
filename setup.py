@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
 
 setuptools.setup(
     name='dropbox-updater',
-    version='1.0.5',
+    version='1.0.6',
     author='Pradish Bijukchhe',
     author_email='pradishbijukchhe@gmail.com',
     description='Module to update python script using dropbox api',

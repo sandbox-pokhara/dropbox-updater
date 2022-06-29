@@ -7,6 +7,7 @@ import tarfile
 import time
 from copy import deepcopy
 from glob import glob
+from subprocess import run
 from threading import Thread
 
 import requests
@@ -96,6 +97,8 @@ def get_cloud_hash(data):
 def update_hash(data):
     data['cloud_hash'] = get_cloud_hash(data)
     data['local_hash'] = get_local_hash(data['file_path'])
+    data['local_requirements_hash'] = get_local_hash(
+        os.path.join(data['extract_dir'], 'requirements.txt'))
     data['hash_match'] = data['cloud_hash'] == data['local_hash']
     return data
 
@@ -143,6 +146,19 @@ def write_file(i, total, data):
         return data
 
 
+def check_requirements(data):
+    logger.info('Checking requirements.txt...')
+    old_requirements_hash = data['local_requirements_hash']
+    new_requirements_hash = get_local_hash(os.path.join(data['extract_dir'], 'requirements.txt'))
+    if new_requirements_hash is not None and old_requirements_hash != new_requirements_hash:
+        logger.info('Pip install needed.')
+        python = os.path.join(data['extract_dir'], 'venv', 'Scripts', 'python.exe')
+        if not os.path.exists(python):
+            logger.info('No venv detected. Skipping...')
+            return
+        run([python, '-m', 'pip', 'install', '-r', 'requirements.txt'], cwd=data['extract_dir'])
+
+
 def check_for_updates(data, restart=True):
     logger.info('Checking for updates...')
     data = deepcopy(data)
@@ -163,6 +179,7 @@ def check_for_updates(data, restart=True):
         logger.info(f'Extracting ({i}/{total})...')
         remove_old_files(data['extract_dir'], data['exclude'])
         extract(data['dropbox_path'], data['file_path'], data['extract_dir'])
+        check_requirements(data)
     logger.info(f'Extracting ({total}/{total})...')
     if restart:
         os.execl(sys.executable, sys.executable, *sys.argv)
